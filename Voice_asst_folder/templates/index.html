@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #response {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Question:</h1>
+        <p>{{ question }}</p>
+        <div id="response"></div>
+        <button onclick="startRecording()">Record Response</button>
+    </div>
+
+    <script>
+        function startRecording() {
+            var recognition = new webkitSpeechRecognition() || SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.start();
+            
+            var attempts = 0;
+
+            recognition.onresult = function(event) {
+                var transcript = event.results[0][0].transcript.trim().toLowerCase();
+                if (transcript === "yes" || transcript === "no") {
+                    sendResponse(transcript);
+                    document.getElementById("response").innerText = "Yayy! Your answer has been successfully recorded!";
+                } else {
+                    // If response is not "yes" or "no", inform the user to try again
+                    attempts++;
+                    if (attempts < 3) {
+                        document.getElementById("response").innerText = "Invalid response. Please try again.";
+                    } else {
+        
+                        sendResponse("invalid");
+                        document.getElementById("response").innerText = "Oops! Your answer has been logged as invalid!";
+                    }
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error detected: ' + event.error);
+            };
+
+            recognition.onend = function() {
+                if (attempts < 3) {
+                    // If attempts are less than 3, restart recognition
+                    recognition.start();
+                } else {
+                    // After 3 attempts, inform the user that the response is invalid
+                    document.getElementById("response").innerText = "Invalid response after 3 attempts";
+                }
+            };
+        }
+
+        function sendResponse(response) {
+            // Send the user's response to the Flask server
+            fetch('/response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ response: response })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update the response area with the server's response
+                document.getElementById("response").innerText = data.status;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

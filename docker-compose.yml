@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+
+  flask:
+    build: ./Voice_asst_folder
+    container_name: voice-asst
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - /dev/snd:/dev/snd
